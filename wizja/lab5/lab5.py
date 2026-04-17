@@ -38,7 +38,7 @@ Obliczanie entropii
 def calc_entropy(hist):
     pdf = (
         hist / hist.sum()
-    )  ### normalizacja histogramu -> rozkład prawdopodobieństwa; UWAGA: niebezpieczeństwo '/0' dla 'zerowego' histogramu!!!
+    )  # normalizacja histogramu -> rozkład prawdopodobieństwa; UWAGA: niebezpieczeństwo '/0' dla 'zerowego' histogramu!!!
     # entropy = -(pdf*np.log2(pdf)).sum() ### zapis na tablicach, ale problem z '/0'
     entropy = -sum([x * np.log2(x) for x in pdf if x != 0])
     return entropy
@@ -82,7 +82,7 @@ def dwt(img):
     bandLL = cv2.sepFilter2D(img, -1, maskL, maskL)[::2, ::2]
     bandLH = cv2.sepFilter2D(img, cv2.CV_16S, maskL, maskH)[
         ::2, ::2
-    ]  ### ze względu na filtrację górnoprzepustową -> wartości ujemne, dlatego wynik 16-bitowy ze znakiem
+    ]  # ze względu na filtrację górnoprzepustową -> wartości ujemne, dlatego wynik 16-bitowy ze znakiem
     bandHL = cv2.sepFilter2D(img, cv2.CV_16S, maskH, maskL)[::2, ::2]
     bandHH = cv2.sepFilter2D(img, cv2.CV_16S, maskH, maskH)[::2, ::2]
 
@@ -95,14 +95,14 @@ def dwt(img):
 def calc_mse_psnr(img1, img2):
     """Funkcja obliczająca MSE i PSNR dla różnicy podanych obrazów, zakładana wartość pikseli z przedziału [0, 255]."""
 
-    imax = 255.0**2  ### maksymalna wartość sygnału -> 255
+    imax = 255.0**2  # maksymalna wartość sygnału -> 255
     """
     W różnicy obrazów istotne są wartości ujemne, dlatego img1 konwertowany jest do typu np.float64 (liczby rzeczywiste)
     aby nie ograniczać wyniku do przedziału [0, 255].
     """
     mse = (
         ((img1.astype(np.float64) - img2) ** 2).sum() / img1.size
-    )  ###img1.size - liczba elementów w img1, ==img1.shape[0]*img1.shape[1] dla obrazów mono, ==img1.shape[0]*img1.shape[1]*img1.shape[2] dla obrazów barwnych
+    )
     psnr = 10.0 * np.log10(imax / mse)
     return (mse, psnr)
 
@@ -131,15 +131,15 @@ def main():
 
     """ Obraz różnicowy """
 
-    img_tmp1 = image_mono[:, 1:]  ### wszystkie wiersze (':'), kolumny od 'pierwszej' do ostatniej ('1:')
-    img_tmp2 = image_mono[:, :-1]  ### wszystkie wiersze, kolumny od 'zerowej' do przedostatniej (':-1')
+    img_tmp1 = image_mono[:, 1:]  # wszystkie wiersze (':'), kolumny od 'pierwszej' do ostatniej ('1:')
+    img_tmp2 = image_mono[:, :-1]  # wszystkie wiersze, kolumny od 'zerowej' do przedostatniej (':-1')
 
     image_hdiff = cv2.addWeighted(img_tmp1, 1, img_tmp2, -1, 0, dtype=cv2.CV_16S)
     printi(image_hdiff, "image_hdiff")
 
-    image_hdiff_0 = cv2.addWeighted(image_mono[:, 0], 1, 0, 0, -127, dtype=cv2.CV_16S) ### od 'zerowej' kolumny obrazu oryginalnego odejmowana stała wartość '127'
+    image_hdiff_0 = cv2.addWeighted(image_mono[:, 0], 1, 0, 0, -127, dtype=cv2.CV_16S) # od 'zerowej' kolumny obrazu oryginalnego odejmowana stała wartość '127'
     printi(image_hdiff_0, "image_hdiff_0")
-    image_hdiff = np.hstack((image_hdiff_0, image_hdiff)) ### połączenie tablic w kierunku poziomym, czyli 'kolumna za kolumną'
+    image_hdiff = np.hstack((image_hdiff_0, image_hdiff)) # połączenie tablic w kierunku poziomym, czyli 'kolumna za kolumną'
     printi(image_hdiff, "image_hdiff")
 
     cv_imshow(image_hdiff, "image_hdiff")
@@ -207,8 +207,9 @@ def main():
     print(f"H(LL) = {H_ll:.4f} \nH(LH) = {H_lh:.4f} \nH(HL) = {H_hl:.4f} \nH(HH) = {H_hh:.4f} \nH_śr = {(H_ll+H_lh+H_hl+H_hh)/4:.4f}")
 
     fig = plt.figure()
-    fig.set_figheight(fig.get_figheight()*2) ### zwiększenie rozmiarów okna
-    fig.set_figwidth(fig.get_figwidth()*2)
+    fig.set_figheight(fig.get_figheight() * 2)  # zwiększenie rozmiarów okna
+    fig.set_figwidth(fig.get_figwidth() * 2)
+    plt.title("Współczynniki DWT")
     plt.subplot(2, 2, 1)
     plt.plot(hist_ll, color="blue")
     plt.title("LL")
@@ -294,7 +295,45 @@ def main():
     plt.savefig("hist_ycrcb.png")
     plt.show()
 
+    xx = []
+    ym = []
+    yp = []
 
+    for quality in [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99]:
+        out_file_name = f"out_image_q{quality:03d}.jpg"
+        """ Zapis do pliku w formacie .jpg z ustaloną 'jakością' """
+        cv2.imwrite(out_file_name, image_col, (cv2.IMWRITE_JPEG_QUALITY, quality))
+        """ Odczyt skompresowanego obrazu, policzenie bitrate'u i PSNR """
+        image_compressed = cv2.imread(out_file_name, cv2.IMREAD_UNCHANGED)
+        bitrate = 8 * os.stat(out_file_name).st_size / (image_col.shape[0] * image_col.shape[1]) ### image.shape == image_compressed.shape
+        mse, psnr = calc_mse_psnr(image_col, image_compressed)
+
+        xx.append(bitrate)
+        ym.append(mse)
+        yp.append(psnr)
+
+        """ Logi na terminal do łatwego podglądu """
+        print(f"Quality={quality:2d}: Bitrate={bitrate:.4f}, MSE={mse:.4f}, PSNR={psnr:.4f} dB")
+
+    fig = plt.figure()
+    fig.set_figwidth(fig.get_figwidth() * 2)
+    plt.suptitle("Charakterystyki R-D")
+    plt.subplot(1, 2, 1)
+    plt.plot(xx, ym, "-.")
+    plt.title("MSE(R)")
+    plt.xlabel("bitrate")
+    plt.ylabel("MSE", labelpad=0)
+    plt.subplot(1, 2, 2)
+    plt.plot(xx, yp, "-o")
+    plt.title("PSNR(R)")
+    plt.xlabel("bitrate")
+    plt.ylabel("PSNR [dB]", labelpad=0)
+
+    plt.savefig("r-d_characteristics")
+    plt.show()
+
+    bitrate_png = 8 * os.stat(images_dir + "wyspa_col.png").st_size / (image_mono.shape[0] * image_mono.shape[1])
+    print(f"Bitrate dla PNG: {bitrate_png:.4f}")
 
 
 if __name__ == "__main__":
