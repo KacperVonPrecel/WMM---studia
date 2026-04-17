@@ -209,7 +209,6 @@ def main():
     fig = plt.figure()
     fig.set_figheight(fig.get_figheight() * 2)  # zwiększenie rozmiarów okna
     fig.set_figwidth(fig.get_figwidth() * 2)
-    plt.title("Współczynniki DWT")
     plt.subplot(2, 2, 1)
     plt.plot(hist_ll, color="blue")
     plt.title("LL")
