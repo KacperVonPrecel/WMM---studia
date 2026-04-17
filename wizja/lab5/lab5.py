@@ -1,9 +1,7 @@
 import os
-
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 """ ==== FUNKCJE POMOCNICZE ==== """
 
@@ -259,7 +257,7 @@ def main():
     plt.plot(hist_r, color="red", label="R")
     plt.plot(hist_g, color="green", label="G")
     plt.plot(hist_b, color="blue", label="B")
-    plt.title("Histogram BGR")
+    plt.title("Histogram RGB")
     plt.xlim([0, 255])
     plt.grid(True)
     plt.legend()
