@@ -109,15 +109,15 @@ def calc_mse_psnr(img1, img2):
 
 """ GŁÓWNY PROGRAM """
 
+""" OBRAZ MONOCHROMATYCZNY """
+
 images_dir = "images/"
 
 
 def main():
     image_mono = cv2.imread(images_dir + "wyspa_mono.png", cv2.IMREAD_UNCHANGED)
-    image_col = cv2.imread(images_dir + "wyspa_col.png", cv2.IMREAD_UNCHANGED)
 
     printi(image_mono)
-    printi(image_col)
 
     bitrate_mono = 8 * os.stat(images_dir + "wyspa_mono.png").st_size / (image_mono.shape[0] * image_mono.shape[1])
 
@@ -178,8 +178,124 @@ def main():
     plt.savefig("compare_hist_mono.png")
     plt.show()
 
-    print(f"Entropia mono = {entropy_mono:.4f}")
-    print(f"Entropia różnicowego = {entropy_hdiff:.4f}")
+    """ Wyliczanie współczynników DWT """
+
+    ll, lh, hl, hh = dwt(image_mono)
+
+    printi(ll, "LL")
+    printi(lh, "LH")
+    printi(hl, "HL")
+    printi(hh, "HH")
+
+    cv_imshow(ll, "LL2")
+    cv_imshow(cv2.multiply(lh, 2), "LH2")
+    cv_imshow(cv2.multiply(hl, 2), "HL2")
+    cv_imshow(cv2.multiply(hh, 2), "HH2")
+
+    hist_ll = cv2.calcHist([ll], [0], None, [256], [0, 256]).flatten()
+    hist_lh = cv2.calcHist([(lh + 255).astype(np.uint16)], [0], None, [511], [0, 511]).flatten()
+    hist_hl = cv2.calcHist([(hl + 255).astype(np.uint16)], [0], None, [511], [0, 511]).flatten()
+    hist_hh = cv2.calcHist([(hh + 255).astype(np.uint16)], [0], None, [511], [0, 511]).flatten()
+    H_ll = calc_entropy(hist_ll)
+    H_lh = calc_entropy(hist_lh)
+    H_hl = calc_entropy(hist_hl)
+    H_hh = calc_entropy(hist_hh)
+
+    print(f"Bitrate: {bitrate_mono:.4f}")
+    print(f"H(obraz_mono) = {entropy_mono:.4f}")
+    print(f"H(obraz_różnicowy) = {entropy_hdiff:.4f}")
+    print(f"H(LL) = {H_ll:.4f} \nH(LH) = {H_lh:.4f} \nH(HL) = {H_hl:.4f} \nH(HH) = {H_hh:.4f} \nH_śr = {(H_ll+H_lh+H_hl+H_hh)/4:.4f}")
+
+    fig = plt.figure()
+    fig.set_figheight(fig.get_figheight()*2) ### zwiększenie rozmiarów okna
+    fig.set_figwidth(fig.get_figwidth()*2)
+    plt.subplot(2, 2, 1)
+    plt.plot(hist_ll, color="blue")
+    plt.title("LL")
+    plt.xlim([0, 255])
+    plt.grid(True)
+    plt.subplot(2, 2, 3)
+    plt.plot(np.arange(-255, 256, 1), hist_lh, color="red")
+    plt.title("LH")
+    plt.xlim([-255, 255])
+    plt.grid(True)
+    plt.subplot(2, 2, 2)
+    plt.plot(np.arange(-255, 256, 1), hist_hl, color="red")
+    plt.title("HL")
+    plt.xlim([-255, 255])
+    plt.grid(True)
+    plt.subplot(2, 2, 4)
+    plt.plot(np.arange(-255, 256, 1), hist_hh, color="red")
+    plt.title("HH")
+    plt.xlim([-255, 255])
+    plt.grid(True)
+
+    plt.savefig("compare_hist_DWT.png")
+    plt.close()
+
+    """ OBRAZ BARWNY """
+
+    image_col = cv2.imread(images_dir + "wyspa_col.png")
+    printi(image_col)
+
+    # cv2.imread wczytuje obraz kolorowy domyślnie jako BGR
+    image_r = image_col[:, :, 2]
+    image_g = image_col[:, :, 1]
+    image_b = image_col[:, :, 0]
+
+    hist_r = cv2.calcHist([image_r], [0], None, [256], [0, 256]).flatten()
+    hist_g = cv2.calcHist([image_g], [0], None, [256], [0, 256]).flatten()
+    hist_b = cv2.calcHist([image_b], [0], None, [256], [0, 256]).flatten()
+
+    H_R = calc_entropy(hist_r)
+    H_G = calc_entropy(hist_g)
+    H_B = calc_entropy(hist_b)
+    print(f"H(R) = {H_R:.4f} \nH(G) = {H_G:.4f} \nH(B) = {H_B:.4f} \nH_śr = {(H_R+H_G+H_B)/3:.4f}")
+
+    cv_imshow(image_r, "R")
+    cv_imshow(image_g, "G")
+    cv_imshow(image_b, "B")
+    plt.figure()
+    plt.plot(hist_r, color="red", label="R")
+    plt.plot(hist_g, color="green", label="G")
+    plt.plot(hist_b, color="blue", label="B")
+    plt.title("Histogram BGR")
+    plt.xlim([0, 255])
+    plt.grid(True)
+    plt.legend()
+
+    plt.savefig("hist_bgr.png")
+    plt.show()
+
+    image_YCrCb = cv2.cvtColor(image_col, cv2.COLOR_BGR2YCrCb)
+    printi(image_YCrCb, "Image_YCrCb")
+
+    hist_y = cv2.calcHist([image_YCrCb[:, :, 0]], [0], None, [256], [0, 256]).flatten()
+    hist_cr = cv2.calcHist([image_YCrCb[:, :, 1]], [0], None, [256], [0, 256]).flatten()
+    hist_cb = cv2.calcHist([image_YCrCb[:, :, 2]], [0], None, [256], [0, 256]).flatten()
+
+    H_Y = calc_entropy(hist_y)
+    H_Cr = calc_entropy(hist_cr)
+    H_Cb = calc_entropy(hist_cb)
+    print(f"H(Y) = {H_Y:.4f} \nH(Cr) = {H_Cr:.4f} \nH(Cb) = {H_Cb:.4f} \nH_śr = {(H_Y+H_Cr+H_Cb)/3:.4f}")
+
+    cv_imshow(image_YCrCb[:, :, 0], "Y")
+    cv_imshow(image_YCrCb[:, :, 1], "Cr")
+    cv_imshow(image_YCrCb[:, :, 2], "Cb")
+    plt.figure()
+    plt.plot(hist_y, color="gray", label="Y")
+    plt.plot(hist_cr, color="red", label="Cr")
+    plt.plot(hist_cb, color="blue", label="Cb")
+    plt.title("Histogram YCrCb")
+    plt.xlim([0, 255])
+    plt.grid(True)
+    plt.legend()
+
+    plt.savefig("hist_ycrcb.png")
+    plt.show()
+
+
+
 
 if __name__ == "__main__":
     main()
