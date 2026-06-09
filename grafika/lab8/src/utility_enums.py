@@ -1,6 +1,5 @@
 from collections import namedtuple
 from enum import Enum
-import models
 
 Colour = namedtuple('Colour', ['name', 'rgb_value'])
 
