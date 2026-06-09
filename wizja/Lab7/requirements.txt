@@ -1,0 +1,7 @@
+insightface
+onnxruntime
+dlib
+jupyterlab
+pandas
+cv2
+numpy
