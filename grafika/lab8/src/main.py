@@ -11,6 +11,7 @@ from blinn_phong_window import BlinnPhongWindow
 
 Task = namedtuple('Task', ['window_args', 'window_cls'])
 
+
 class TaskType(Enum):
     @property
     def window_args(self):
@@ -58,5 +59,5 @@ class TaskType(Enum):
 
 
 if __name__ == '__main__':
-    task = TaskType.DEFAULT
+    task = TaskType.ROBOT
     moderngl_window.run_window_config(task.window_cls, args=task.window_args)
