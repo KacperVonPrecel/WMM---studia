@@ -5,6 +5,10 @@ Colour = namedtuple('Colour', ['name', 'rgb_value'])
 
 
 class ColourRGB(Enum):
+    """
+    Enum class used for quick access to prepared RGB values for certain colours.
+    Allows to choose colour based on student index.
+    """
     @property
     def colour_name(self):
         return self.value.name

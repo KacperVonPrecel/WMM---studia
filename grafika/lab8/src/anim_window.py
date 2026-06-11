@@ -20,18 +20,13 @@ class AnimWindow(BaseWindow):
 
         element_id = STUDENT_INDEX % 3
 
-        print(f"[DEBUG] Twój element_id to: {element_id}")
-
         if element_id == 0:
-            print("[DEBUG] Ładuję Ostrosłup (Czapkę)")
             self.accessory = models.load_pyramid(self.program)
             self.active_accessory_type = "HAT"
         elif element_id == 1:
-            print("[DEBUG] Ładuję Sferę (Kulkę)")
             self.accessory = models.load_sphere(self.program)
             self.active_accessory_type = "BALL"
         elif element_id == 2:
-            print("[DEBUG] Ładuję Torus")
             self.accessory = models.load_torus(self.program)
             self.active_accessory_type = "TORUS"
 
@@ -42,24 +37,26 @@ class AnimWindow(BaseWindow):
         self.uniform_loc_robot_colour = self.program["robot_colour"]
 
     def render_object(self, object_to_render, translation=(0.0, 0.0, 0.0), rotation=0.0, scale=(1.0, 1.0, 1.0)):
+        """
+        Utility method that allows for quick rendering of given object with given translation, rotation and scale.
+        """
         model = Matrix44.from_translation(translation) * Matrix44.from_z_rotation(np.radians(rotation)) * Matrix44.from_scale(scale)
         self.uniform_loc_M.write(model.astype('f4'))
         object_to_render.render(moderngl.TRIANGLES)
 
     def render_animated_limb(self, object_to_render, time, base_angle, amplitude, speed, translation, local_translation, scale, phase=1.0):
-        # 1. Obliczenie kąta ze wzoru z instrukcji: A * sin(phi * time)
+        """
+        Utility method that allows to animate circular movement of one object on one axis with customizable movement variables.
+        (amplitude, speed, shoulder translation, local translation, scale, phase)
+        """
         angle = (phase * amplitude * np.sin(speed * time)) + base_angle
 
-        # 2. Utworzenie macierzy składowych
-        mat_scale = Matrix44.from_scale(scale)                                # S
-        mat_local_trans = Matrix44.from_translation(local_translation)        # T_local
-        mat_rotation = Matrix44.from_z_rotation(np.radians(angle))            # R_z(angle)
-        mat_shoulder_trans = Matrix44.from_translation(translation)           # T_shoulder
+        mat_scale = Matrix44.from_scale(scale)                                # scale (S)
+        mat_local_trans = Matrix44.from_translation(local_translation)        # local_translation (T_local)
+        mat_rotation = Matrix44.from_z_rotation(np.radians(angle))            # angle (R_z(angle))
+        mat_shoulder_trans = Matrix44.from_translation(translation)           # shoulder_translaton (T_shoulder)
 
-        # 3. Złożenie transformacji (od prawej do lewej)
-        model = mat_shoulder_trans * mat_rotation * mat_local_trans * mat_scale
-
-        # 4. Wysłanie do GPU i renderowanie
+        model = mat_shoulder_trans * mat_rotation * mat_local_trans * mat_scale  # T_shoulder * R_z(angle) * T_local * S
         self.uniform_loc_M.write(model.astype('f4'))
         object_to_render.render(moderngl.TRIANGLES)
 
@@ -116,6 +113,7 @@ class AnimWindow(BaseWindow):
         # Left leg
         self.render_object(self.cube, translation=(2.0, -2.0, 0.0), rotation=-30.0, scale=(1.0, 3.0, 1.0))
 
+        # Accessory
         self.uniform_loc_robot_colour.value = ColourRGB.get_by_index(STUDENT_INDEX + 5).colour_rgb_value
         if self.active_accessory_type == "HAT":
             # Hat

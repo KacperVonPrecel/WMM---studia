@@ -20,18 +20,14 @@ class PhongWindow(BaseWindow):
 
         element_id = STUDENT_INDEX % 3
 
-        print(f"[DEBUG] Twój element_id to: {element_id}")
-
+        # Deciding which accessory to load based on STUDENT_INDEX
         if element_id == 0:
-            print("[DEBUG] Ładuję Ostrosłup (Czapkę)")
             self.accessory = models.load_pyramid(self.program)
             self.active_accessory_type = "HAT"
         elif element_id == 1:
-            print("[DEBUG] Ładuję Sferę (Kulkę)")
             self.accessory = models.load_sphere(self.program)
             self.active_accessory_type = "BALL"
         elif element_id == 2:
-            print("[DEBUG] Ładuję Torus")
             self.accessory = models.load_torus(self.program)
             self.active_accessory_type = "TORUS"
 
@@ -53,11 +49,17 @@ class PhongWindow(BaseWindow):
         self.uniform_loc_material_shininess = self.program['material_shininess']
 
     def render_object(self, object_to_render, translation=(0.0, 0.0, 0.0), rotation=0.0, scale=(1.0, 1.0, 1.0)):
+        """
+        Utility method that allows for quick rendering of given object with given translation, rotation and scale.
+        """
         model = Matrix44.from_translation(translation) * Matrix44.from_z_rotation(rotation * np.pi / 180) * Matrix44.from_scale(scale)
         self.uniform_loc_M.write(model.astype('f4'))
         object_to_render.render(moderngl.TRIANGLES)
 
     def configure_lighting(self, camera_pos, l_pos, l_ambient, l_diffuse, l_specular, m_ambient, m_diffuse, m_specular, m_shininess):
+        """
+        Simplifies the process of configurating lighting settings.
+        """
         self.uniform_loc_camera_pos.write(camera_pos)
         self.uniform_loc_light_pos.write(l_pos)
 
@@ -70,6 +72,9 @@ class PhongWindow(BaseWindow):
         self.uniform_loc_material_shininess.value = m_shininess
 
     def change_colour(self, m_ambient, m_diffuse):
+        """
+        Allows for dynamic change of object's colour during render
+        """
         self.uniform_loc_material_ambient.value = m_ambient
         self.uniform_loc_material_diffuse.value = m_diffuse
 
@@ -83,6 +88,8 @@ class PhongWindow(BaseWindow):
             (0.0, 1.0, 0.0),
             (0.0, 1.0, 0.0),
         )
+
+        # Setting lighting
 
         self.uniform_loc_P.write(projection.astype('f4'))
         self.uniform_loc_V.write(view.astype('f4'))
@@ -132,8 +139,8 @@ class PhongWindow(BaseWindow):
         # Left leg
         self.render_object(self.cube, translation=(2.0, -2.0, 0.0), rotation=-30.0, scale=(1.0, 3.0, 1.0))
 
+        # Accessory
         self.change_colour(m_ambient=colour_accessory, m_diffuse=colour_accessory)
-
         if self.active_accessory_type == "HAT":
             # Hat
             self.render_object(self.accessory, translation=(0.0, 6.0, 0.0), rotation=0.0, scale=(1.5, 1.5, 1.5))
